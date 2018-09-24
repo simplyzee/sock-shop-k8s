@@ -1,0 +1,48 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: catalogue-db
+  labels:
+    name: catalogue-db
+  namespace: sock-shop
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: catalogue-db
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        name: catalogue-db
+    spec:
+      containers:
+      - name: catalogue-db
+        image: weaveworksdemos/catalogue-db:0.3.0
+        args:
+        - "--ignore-db-dir=lost+found"
+        env:
+          - name: MYSQL_ROOT_PASSWORD
+            valueFrom: 
+              secretKeyRef:
+                name: catalogue-db-secret
+                key: password
+          - name: MYSQL_DATABASE
+            valueFrom:
+              secretKeyRef:
+                name: catalogue-db-secret
+                key: database_name
+        ports:
+        - name: mysql
+          containerPort: 3306
+        volumeMounts:
+        - name: catalogue-db-storage
+          mountPath: /var/lib/mysql
+      volumes:
+      - name: catalogue-db-storage
+        persistentVolumeClaim:
+          claimName: catalogue-db-pvc
+      nodeSelector:
+        beta.kubernetes.io/os: linux
